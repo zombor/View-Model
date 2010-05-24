@@ -59,7 +59,7 @@ class Kohana_View {
 		{
 			$data = file_get_contents($kohana_view_filename);
 
-			$regex = '/<\?=(.+?)\?>/';
+			$regex = '/<\?(\=|php echo)(.+?)\?>/';
 			$data = preg_replace_callback($regex, array($this, '_escape_val'), $data);
 
 			// Load the view within the current scope
@@ -86,10 +86,10 @@ class Kohana_View {
 	 */
 	protected static function _escape_val($matches)
 	{
-		if (substr($matches[1], 0, 1) != '!') // Escape the data
-			return '<?php echo html::chars('.$matches[1].'); ?>';
+		if (substr(trim($matches[2]), 0, 1) != '!') // Escape the data
+			return '<?php echo html::chars('.$matches[2].'); ?>';
 		else // Remove the "turn off escape" character
-			return '<?php echo '.substr($matches[1], 1, strlen($matches[1])-1).'; ?>';
+			return '<?php echo '.substr(trim($matches[2]), 1, strlen($matches[2])-1).'; ?>';
 	}
 
 	/**
