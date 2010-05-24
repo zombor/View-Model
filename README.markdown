@@ -1,8 +1,10 @@
-== Kohana-View
+Kohana-View
+============
 
 Kohana-View is a replacement for the default Kohana v3 class.
 
-== Why you should use it
+Why you should use it
+============
 
  - Class based views
    - Lighter controllers
