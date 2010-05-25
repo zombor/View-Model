@@ -28,12 +28,12 @@ class Kohana_View {
 	protected $_raw_output_char = '!';
 
 	/**
-	 * The encoding method to use on view output. Only use the method name, leave out parenthesis.
+	 * The encoding method to use on view output. Only use the method name
 	 */
 	protected $_encode_method = 'html::chars';
 
 	/**
-	 * Returns a new View object. If you do not define the "file" parameter,
+	 * Returns a new raw View object. If you do not define the "file" parameter,
 	 * you must call [View::set_filename].
 	 *
 	 *     $view = View::factory($file);
@@ -78,7 +78,7 @@ class Kohana_View {
 			$data = preg_replace_callback($regex, array($this, '_escape_val'), $data);
 
 			// Load the view within the current scope
-			eval('?>'. $data);
+			eval('?>'.$data);
 		}
 		catch (Exception $e)
 		{
