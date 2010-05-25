@@ -11,9 +11,17 @@ Why you should use it
    - Takes logic out of your view templates
  - Auto escaping of variable output
    - Automatically escapes all view variables automatically
-     - Also lets you obtain "raw" data by prepending your variable with ! (<?=!$foobar?>)
+   - Also lets you obtain "raw" data by prepending your variable with ! (<?=!$foobar?>)
 
-Examples
+See the examples branch for examples and benchmarking.
+
+This class is mostly backwards compatible. You can use it in replacement of the original view class when it was used in basic usage.
+
+Notes
 ============
 
-This branch is for showing examples and benchmarking between native kohana views, class based views, and mustache views.
+If you used views in your application without setting the filename initially, you must change those calls so that the first parameter is boolean FALSE:
+
+	$foo = View::factory(FALSE);
+	$foo->set_filename('foobar');
+	echo $foo;
