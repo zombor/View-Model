@@ -5,12 +5,13 @@
 		<title><?=$title?></title>
 	</head>
 	<body>
-		<h1><?php echo $title?></h1>
-		<p>Here are all my <?=$things?>:</p>
+		<h1><?=html::chars($title)?></h1>
+		<p>Here are all my <?=html::chars($things)?>:</p>
 		<ul>
 			<?php foreach ($tests as $test):?>
 			<li><strong><?=$test->id?>:</strong> (<?=$test->name?>:<?=$test->value?>)</li>
 			<?php endforeach;?>
 		</ul>
+		<h2>
 	</body>
 </html>
