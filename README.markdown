@@ -12,3 +12,8 @@ Why you should use it
  - Auto escaping of variable output
    - Automatically escapes all view variables automatically
      - Also lets you obtain "raw" data by prepending your variable with ! (<?=!$foobar?>)
+
+Examples
+============
+
+This branch is for showing examples and benchmarking between native kohana views, class based views, and mustache views.
