@@ -28,6 +28,11 @@ class Kohana_View {
 	protected $_raw_output_char = '!';
 
 	/**
+	 * The encoding method to use on view output. Only use the method name, leave out parenthesis.
+	 */
+	protected $_encode_method = 'html::chars';
+
+	/**
 	 * Returns a new View object. If you do not define the "file" parameter,
 	 * you must call [View::set_filename].
 	 *
@@ -97,7 +102,7 @@ class Kohana_View {
 	protected function _escape_val($matches)
 	{
 		if (substr(trim($matches[2]), 0, 1) != $this->_raw_output_char)
-			return '<?php echo html::chars('.$matches[2].'); ?>';
+			return '<?php echo '.$this->_encode_method.'('.$matches[2].'); ?>';
 		else // Remove the "turn off escape" character
 			return '<?php echo '.substr(trim($matches[2]), strlen($this->$_raw_output_char), strlen($matches[2])-1).'; ?>';
 	}
