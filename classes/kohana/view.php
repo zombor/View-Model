@@ -7,7 +7,7 @@
  * @package    Kohana
  * @category   Base
  * @author     Kohana Team
- * @copyright  (c) 2008-2009 Kohana Team
+ * @copyright  (c) 2008-2010 Kohana Team
  * @license    http://kohanaphp.com/license
  */
 class Kohana_View {
@@ -22,6 +22,12 @@ class Kohana_View {
 	protected $_data = array();
 
 	/**
+	 * Raw output character. Prepend this on any echo variables to
+	 * turn off auto encoding of the output
+	 */
+	protected $_raw_output_char = '!';
+
+	/**
 	 * Returns a new View object. If you do not define the "file" parameter,
 	 * you must call [View::set_filename].
 	 *
@@ -33,15 +39,19 @@ class Kohana_View {
 	 */
 	public static function factory($file = NULL, array $data = NULL)
 	{
-		return new View($file, $data);
+		// Return a raw view object if no template is specified.
+		if ($file === FALSE)
+			return new View(FALSE, $data);
+
+		$class = 'View_'.$file;
+		return new $class($file, $data);
 	}
 
 	/**
 	 * Captures the output that is generated when a view is included.
-	 * The view data will be extracted to make local variables. This method
-	 * is static to prevent object scope resolution.
+	 * The view data will be extracted to make local variables.
 	 *
-	 *     $output = View::capture($file, $data);
+	 *     $output = $this->capture($file, $data);
 	 *
 	 * @param   string  filename
 	 * @param   array   variables
@@ -84,12 +94,12 @@ class Kohana_View {
 	 * @param   array   matches
 	 * @return  string
 	 */
-	protected static function _escape_val($matches)
+	protected function _escape_val($matches)
 	{
-		if (substr(trim($matches[2]), 0, 1) != '!') // Escape the data
+		if (substr(trim($matches[2]), 0, 1) != $this->_raw_output_char)
 			return '<?php echo html::chars('.$matches[2].'); ?>';
 		else // Remove the "turn off escape" character
-			return '<?php echo '.substr(trim($matches[2]), 1, strlen($matches[2])-1).'; ?>';
+			return '<?php echo '.substr(trim($matches[2]), strlen($this->$_raw_output_char), strlen($matches[2])-1).'; ?>';
 	}
 
 	/**
@@ -145,17 +155,18 @@ class Kohana_View {
 	 */
 	public function __construct($file = NULL, array $data = NULL)
 	{
-		if ($file !== NULL)
-		{
-			$this->set_filename($file);
-		}
-		else
+		if ($file === NULL)
 		{
 			$foo = explode('_', get_class($this));
 			array_shift($foo);
 			$file = strtolower(implode('/', $foo));
 			$this->set_filename($file);
 		}
+		elseif ($file !== FALSE)
+		{
+			$this->set_filename($file);
+		}
+		
 
 		if ( $data !== NULL)
 		{
