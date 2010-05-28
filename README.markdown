@@ -47,7 +47,7 @@ Create your view template file the same as you would have before, but remember t
     // application/view/foo/bar.php
     <p>This view is <?=$adjective?>!</p>
     <p>Another possible description is: <?=$random_adjective?></p>
-    <p>Here is <?=!$bold_adj?> in bold!!!</p>
+    <p>Here are my adjective notes: <?=!$adjective_note?></p>
 
 Your view class will pass on properties and methods that begin with 'var_' to the template.
 
@@ -63,9 +63,10 @@ Your view class will pass on properties and methods that begin with 'var_' to th
             return array_rand($this->adjectives);
         }
 
-        public function var_bold_adj()
+        public function var_adjective_note()
         {
-            return '<b>'.$this->var_adjective.'</b>';
+            $note = new Model_Adjective($this->var_adjective);
+            return $note->note;
         }
     }
 
@@ -80,4 +81,4 @@ which would render:
 >
 > Another possible description is: cool beans
 >
-> Here is **the best** in bold!!!
+> Here are my adjective notes: This is <sup>Super!!</sup>
