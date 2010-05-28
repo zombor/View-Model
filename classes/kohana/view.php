@@ -30,7 +30,7 @@ class Kohana_View {
 	/**
 	 * The encoding method to use on view output. Only use the method name
 	 */
-	protected $_encode_method = 'html::chars';
+	protected $_encode_method = 'HTML::chars';
 
 	/**
 	 * Returns a new raw View object. If you do not define the "file" parameter,
