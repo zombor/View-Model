@@ -42,7 +42,7 @@ Create the associated view file (template) in your views directory with the same
 Usage
 ============
 
-Create your view template file the same as you would have before, but remember that any logic will belong in the view class.  If you want to prevent the automatic variable escaping, prepend the variable with an '!'.
+Create your view template file the same as you would have before, but remember that any logic belongs in the view class.  If you want to prevent the automatic variable escaping, prepend the variable with an '!'.
 
     // application/view/foo/bar.php
     <p>This view is <?=$adjective?>!</p>
@@ -71,9 +71,8 @@ Your view class will pass on properties and methods that begin with 'var_' to th
 
 And in your controller you could do
 
-    $view = View::factory('foo/bar')
-        ->set('var_adjective', 'the best');
-    echo $view-render();
+    $bar = View::factory('foo/bar')->set('var_adjective', 'the best');
+    echo $bar;
 
 which would render:
 
