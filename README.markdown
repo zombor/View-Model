@@ -39,12 +39,15 @@ Create the associated view file (template) in your views directory with the same
 
     // application/views/foo/bar.php
 
+Usage
+============
+
 Create your view template file the same as you would have before, but remember that any logic will belong in the view class.  If you want to prevent the automatic variable escaping, prepend the variable with an '!'.
 
     // application/view/foo/bar.php
     <p>This view is <?=$adjective?>!</p>
     <p>Another possible description is: <?=$random_adjective?></p>
-    <p>Here is <?=$bold_adj?> in bold!!!</p>
+    <p>Here is <?=!$bold_adj?> in bold!!!</p>
 
 Your view class will pass on properties and methods that begin with 'var_' to the template.
 
@@ -75,5 +78,7 @@ And in your controller you could do
 which would render:
 
 > This view is the best!
+>
 > Another possible description is: cool beans
+>
 > Here is **the best** in bold!!!
