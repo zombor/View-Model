@@ -47,8 +47,8 @@ class Kohana_View {
 		// Return a raw view object if no template is specified.
 		if ($file === FALSE)
 			return new View(FALSE, $data);
-
-		$class = 'View_'.$file;
+		
+		$class = 'View_'.strtr($file, '/', '_');
 		return new $class($file, $data);
 	}
 
