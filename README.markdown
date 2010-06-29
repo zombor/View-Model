@@ -44,7 +44,7 @@ Usage
 
 Create your view template file the same as you would have before, but remember that any logic belongs in the view class.  If you want to prevent the automatic variable escaping, prepend the variable with an '!'.
 
-	// application/view/foo/bar.php
+	// application/views/foo/bar.php
 	<p>This view is <?=$adjective?>!</p>
 	<p>Another possible description is: <?=$random_adjective?></p>
 	<p>Here are my adjective notes: <?=!$adjective_note?></p>
