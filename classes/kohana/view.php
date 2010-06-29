@@ -25,7 +25,7 @@ class Kohana_View {
 	 * Raw output character. Prepend this on any echo variables to
 	 * turn off auto encoding of the output
 	 */
-	protected $_raw_output_char = '!';
+	protected $x = '!';
 
 	/**
 	 * The encoding method to use on view output. Only use the method name
@@ -44,10 +44,11 @@ class Kohana_View {
 	 */
 	public static function factory($file = NULL, array $data = NULL)
 	{
+		return new View($file);
 		// Return a raw view object if no template is specified.
 		if ($file === FALSE)
 			return new View(FALSE, $data);
-		
+
 		$class = 'View_'.strtr($file, '/', '_');
 		return new $class($file, $data);
 	}
@@ -78,7 +79,7 @@ class Kohana_View {
 			$data = preg_replace_callback($regex, array($this, '_escape_val'), $data);
 
 			// Load the view within the current scope
-			eval('?>'.$data);
+			eval('?> '.$data);
 		}
 		catch (Exception $e)
 		{
@@ -104,7 +105,7 @@ class Kohana_View {
 		if (substr(trim($matches[2]), 0, 1) != $this->_raw_output_char)
 			return '<?php echo '.$this->_encode_method.'('.$matches[2].'); ?>';
 		else // Remove the "turn off escape" character
-			return '<?php echo '.substr(trim($matches[2]), strlen($this->$_raw_output_char), strlen($matches[2])-1).'; ?>';
+			return '<?php echo '.substr(trim($matches[2]), strlen($this->_raw_output_char), strlen($matches[2])-1).'; ?>';
 	}
 
 	/**
