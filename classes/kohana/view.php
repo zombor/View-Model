@@ -25,7 +25,7 @@ class Kohana_View {
 	 * Raw output character. Prepend this on any echo variables to
 	 * turn off auto encoding of the output
 	 */
-	protected $x = '!';
+	protected $_raw_output_char = '!';
 
 	/**
 	 * The encoding method to use on view output. Only use the method name
