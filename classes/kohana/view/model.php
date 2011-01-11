@@ -27,7 +27,6 @@ class Kohana_View_Model {
 	 */
 	public static function factory($file = NULL, array $data = NULL)
 	{
-		return new View($file);
 		// Return a raw view object if no template is specified.
 		if ($file === FALSE)
 			return new View(FALSE, $data);
