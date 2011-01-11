@@ -22,17 +22,6 @@ class Kohana_View {
 	protected $_data = array();
 
 	/**
-	 * Raw output character. Prepend this on any echo variables to
-	 * turn off auto encoding of the output
-	 */
-	protected $_raw_output_char = '!';
-
-	/**
-	 * The encoding method to use on view output. Only use the method name
-	 */
-	protected $_encode_method = 'HTML::chars';
-
-	/**
 	 * Returns a new raw View object. If you do not define the "file" parameter,
 	 * you must call [View::set_filename].
 	 *
@@ -65,6 +54,11 @@ class Kohana_View {
 	 */
 	protected function capture($kohana_view_filename, array $kohana_view_data)
 	{
+		if ( ! in_array('kohana.view', stream_get_wrappers()))
+		{
+			stream_wrapper_register('kohana.view', get_class($this));
+		}
+
 		// Import the view variables to local namespace
 		extract($kohana_view_data, EXTR_SKIP);
 
@@ -73,13 +67,7 @@ class Kohana_View {
 
 		try
 		{
-			$data = file_get_contents($kohana_view_filename);
-
-			$regex = '/<\?(\=|php echo)(.+?)\?>/';
-			$data = preg_replace_callback($regex, array($this, '_escape_val'), $data);
-
-			// Load the view within the current scope
-			eval('?> '.$data);
+			include 'kohana.view://'.$kohana_view_filename;
 		}
 		catch (Exception $e)
 		{
@@ -92,20 +80,6 @@ class Kohana_View {
 
 		// Get the captured output and close the buffer
 		return ob_get_clean();
-	}
-
-	/**
-	 * Escapes a variable from template matching
-	 *
-	 * @param   array   matches
-	 * @return  string
-	 */
-	protected function _escape_val($matches)
-	{
-		if (substr(trim($matches[2]), 0, 1) != $this->_raw_output_char)
-			return '<?php echo '.$this->_encode_method.'('.$matches[2].'); ?>';
-		else // Remove the "turn off escape" character
-			return '<?php echo '.substr(trim($matches[2]), strlen($this->_raw_output_char), strlen($matches[2])-1).'; ?>';
 	}
 
 	/**
@@ -172,7 +146,6 @@ class Kohana_View {
 		{
 			$this->set_filename($file);
 		}
-		
 
 		if ( $data !== NULL)
 		{
@@ -286,9 +259,9 @@ class Kohana_View {
 	{
 		if (($path = Kohana::find_file('views', $file)) === FALSE)
 		{
-			throw new Kohana_View_Exception('The requested view :file could not be found', array(
-				':file' => $file,
-			));
+			//throw new Kohana_View_Exception('The requested view :file could not be found', array(
+			//	':file' => $file,
+			//));
 		}
 
 		// Store the file path locally
@@ -376,26 +349,190 @@ class Kohana_View {
 			throw new Kohana_View_Exception('You must set the file to use within your view before rendering');
 		}
 
-		// Get the var_ properties
-		foreach (get_object_vars($this) as $property => $value)
-		{
-			if (substr_count($property, 'var_'))
-			{
-				$this->set(str_replace('var_', '', $property), $this->{$property});
-			}
-		}
-
-		// Get the var_ methods
-		foreach (get_class_methods($this) as $method)
-		{
-			if (substr_count($method, 'var_'))
-			{
-				$this->set(str_replace('var_', '', $method), $this->{$method}());
-			}
-		}
-
 		// Combine local and global data and capture the output
 		return $this->capture($this->_file, $this->_data + View::$_global_data);
+	}
+
+	/**
+	 * Define stream wrapper methods
+	 */
+
+	/**
+	 * Current stream position.
+	 *
+	 * @var int
+	 */
+	protected $_pos = 0;
+
+	/**
+	 * Stream stats.
+	 *
+	 * @var array
+	 */
+	protected $_stat;
+
+	/**
+	 * Raw output character. Prepend this on any echo variables to
+	 * turn off auto encoding of the output
+	 */
+	protected $_raw_output_char = '!';
+
+	/**
+	 * The encoding method to use on view output. Only use the method name
+	 */
+	protected $_encode_method = 'HTML::chars';
+
+	/**
+	 * Opens the script file and converts markup.
+	 */
+	public function stream_open($path, $mode, $options, &$opened_path)
+	{
+		// get the view script source
+		$path        = str_replace('kohana.view://', '', $path);
+		$this->_data = file_get_contents($path);
+
+		/**
+		 * If reading the file failed, update our local stat store
+		 * to reflect the real stat of the file, then return on failure
+		 */
+		if ($this->_data === false)
+		{
+			$this->_stat = stat($path);
+			return false;
+		}
+
+		/**
+		 * Convert <?= ?> to long-form <?php echo ?> and <? ?> to <?php ?>
+		 *
+		 */
+		$regex = '/<\?(\=|php echo)(.+?)\?>/';
+		$this->_data = preg_replace_callback($regex, array($this, '_escape_val'), $this->_data);
+
+		/**
+		 * file_get_contents() won't update PHP's stat cache, so we grab a stat
+		 * of the file to prevent additional reads should the script be
+		 * requested again, which will make include() happy.
+		 */
+		$this->_stat = stat($path);
+
+		return true;
+	}
+
+	/**
+	 * Escapes a variable from template matching
+	 *
+	 * @param   array   matches
+	 * @return  string
+	 */
+	protected function _escape_val($matches)
+	{
+		if (method_exists($this, str_replace('$', 'var_', $matches[2])))
+		{
+			$var = str_replace('$', '$this->var_', $matches[2]).'()';
+		}
+		else
+		{
+			$var = str_replace('$', '$this->var_', $matches[2]);
+		}
+
+		if (substr(trim($matches[2]), 0, 1) != $this->_raw_output_char)
+		{
+			return '<?php echo '.$this->_encode_method.'('.$var.'); ?>';
+		}
+		else // Remove the "turn off escape" character
+			return '<?php echo '.substr(trim($var), strlen($this->_raw_output_char), strlen($var)-1).'(); ?>';
+	}
+
+	/**
+	 * Included so that __FILE__ returns the appropriate info
+	 *
+	 * @return array
+	 */
+	public function url_stat()
+	{
+		return $this->_stat;
+	}
+
+	/**
+	 * Reads from the stream.
+	 */
+	public function stream_read($count)
+	{
+		$ret = substr($this->_data, $this->_pos, $count);
+		$this->_pos += strlen($ret);
+		return $ret;
+	}
+
+	/**
+	 * Tells the current position in the stream.
+	 */
+	public function stream_tell()
+	{
+		return $this->_pos;
+	}
+
+	/**
+	 * Tells if we are at the end of the stream.
+	 */
+	public function stream_eof()
+	{
+		return $this->_pos >= strlen($this->_data);
+	}
+
+	/**
+	 * Stream statistics.
+	 */
+	public function stream_stat()
+	{
+		return $this->_stat;
+	}
+
+	/**
+	 * Seek to a specific point in the stream.
+	 */
+	public function stream_seek($offset, $whence)
+	{
+		switch ($whence)
+		{
+			case SEEK_SET:
+				if ($offset < strlen($this->_data) && $offset >= 0)
+				{
+					$this->_pos = $offset;
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+				break;
+
+			case SEEK_CUR:
+				if ($offset >= 0)
+				{
+					$this->_pos += $offset;
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+				break;
+
+			case SEEK_END:
+				if (strlen($this->_data) + $offset >= 0)
+				{
+					$this->_pos = strlen($this->_data) + $offset;
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+				break;
+
+			default:
+				return false;
+		}
 	}
 
 } // End View
