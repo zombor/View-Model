@@ -1,7 +1,7 @@
 Kohana-View
 ============
 
-Kohana-View is a replacement for the default Kohana v3 class.
+Kohana-View_Model is a replacement for the default Kohana v3 class.
 
 Why you should use it
 ============
@@ -24,7 +24,7 @@ Put your view class files in the classes/view/ directory and name them the same 
 
 	// Note this is 'view' and not 'views'
 	// application/classes/view/foo/bar.php
-	class View_Foo_Bar extends View
+	class View_Foo_Bar extends View_Model
 
 Create the associated view file (template) in your views directory with the same filename and path as your view class.
 
@@ -43,7 +43,7 @@ Create your view template file the same as you would have before, but remember t
 Your view class will pass on properties and methods that begin with 'var_' to the template.
 
 	// application/classes/view/foo/bar.php
-	class View_Foo_Bar extends View {
+	class View_Foo_Bar extends View_Model {
 
 		public $adjectives = array('awesome', 'neato', 'cool beans');
 
@@ -63,7 +63,7 @@ Your view class will pass on properties and methods that begin with 'var_' to th
 
 And in your controller you could do
 
-	$bar = View::factory('foo/bar')->set('var_adjective', 'the best');
+	$bar = View_Model::factory('foo/bar')->set('var_adjective', 'the best');
 	echo $bar;
 
 which would render:
