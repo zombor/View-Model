@@ -11,20 +11,11 @@ Why you should use it
    - Takes logic out of your view templates
  - Auto escaping of variable output
    - Automatically escapes all view variables automatically
-   - Also lets you obtain "raw" data by prepending your variable with ! (<?=!$foobar?>)
+   - Also lets you obtain "raw" data by prepending your variable with ^ (<?=^$foobar?>)
 
 See the examples branch for examples and benchmarking.
 
-This class is mostly backwards compatible. You can use it in replacement of the original view class when it was used in basic usage.
-
-Notes
-============
-
-If you used views in your application without setting the filename initially, you must change those calls so that the first parameter is boolean FALSE:
-
-	$foo = View::factory(FALSE);
-	$foo->set_filename('foobar');
-	echo $foo;
+This class is not backwards compatible with the stock view class. It completely replaces it.
 
 Setup
 ============
@@ -47,7 +38,7 @@ Create your view template file the same as you would have before, but remember t
 	// application/views/foo/bar.php
 	<p>This view is <?=$adjective?>!</p>
 	<p>Another possible description is: <?=$random_adjective?></p>
-	<p>Here are my adjective notes: <?=!$adjective_note?></p>
+	<p>Here are my adjective notes: <?=^$adjective_note?></p>
 
 Your view class will pass on properties and methods that begin with 'var_' to the template.
 
