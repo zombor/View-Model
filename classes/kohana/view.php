@@ -12,14 +12,8 @@
  */
 class Kohana_View {
 
-	// Array of global variables
-	protected static $_global_data = array();
-
 	// View filename
 	protected $_file;
-
-	// Encoded view data
-	protected $_data = array();
 
 	/**
 	 * Returns a new raw View object. If you do not define the "file" parameter,
@@ -52,15 +46,12 @@ class Kohana_View {
 	 * @param   array   variables
 	 * @return  string
 	 */
-	protected function capture($kohana_view_filename, array $kohana_view_data)
+	protected function capture($kohana_view_filename)
 	{
 		if ( ! in_array('kohana.view', stream_get_wrappers()))
 		{
-			stream_wrapper_register('kohana.view', get_class($this));
+			stream_wrapper_register('kohana.view', 'Kohana_Stream_Wrapper');
 		}
-
-		// Import the view variables to local namespace
-		extract($kohana_view_data, EXTR_SKIP);
 
 		// Capture the view output
 		ob_start();
@@ -80,46 +71,6 @@ class Kohana_View {
 
 		// Get the captured output and close the buffer
 		return ob_get_clean();
-	}
-
-	/**
-	 * Sets a global variable, similar to [View::set], except that the
-	 * variable will be accessible to all views.
-	 *
-	 *     View::set_global($name, $value);
-	 *
-	 * @param   string  variable name or an array of variables
-	 * @param   mixed   value
-	 * @return  void
-	 */
-	public static function set_global($key, $value = NULL)
-	{
-		if (is_array($key))
-		{
-			foreach ($key as $key2 => $value)
-			{
-				View::$_global_data[$key2] = $value;
-			}
-		}
-		else
-		{
-			View::$_global_data[$key] = $value;
-		}
-	}
-
-	/**
-	 * Assigns a global variable by reference, similar to [View::bind], except
-	 * that the variable will be accessible to all views.
-	 *
-	 *     View::bind_global($key, $value);
-	 *
-	 * @param   string  variable name
-	 * @param   mixed   referenced variable
-	 * @return  void
-	 */
-	public static function bind_global($key, & $value)
-	{
-		View::$_global_data[$key] =& $value;
 	}
 
 	/**
@@ -166,15 +117,15 @@ class Kohana_View {
 	 * @return  mixed
 	 * @throws  Kohana_Exception
 	 */
-	public function & __get($key)
+	public function __get($key)
 	{
-		if (isset($this->_data[$key]))
+		if (method_exists($this, $key))
 		{
-			return $this->_data[$key];
+			return $this->$key();
 		}
-		elseif (isset(View::$_global_data[$key]))
+		elseif (property_exists($this, $key))
 		{
-			return View::$_global_data[$key];
+			return $this->$key;
 		}
 		else
 		{
@@ -197,33 +148,6 @@ class Kohana_View {
 		$this->set($key, $value);
 	}
 
-	/**
-	 * Magic method, determines if a variable is set.
-	 *
-	 *     isset($view->foo);
-	 *
-	 * [!!] `NULL` variables are not considered to be set by [isset](http://php.net/isset).
-	 *
-	 * @param   string  variable name
-	 * @return  boolean
-	 */
-	public function __isset($key)
-	{
-		return (isset($this->_data[$key]) OR isset(View::$_global_data[$key]));
-	}
-
-	/**
-	 * Magic method, unsets a given variable.
-	 *
-	 *     unset($view->foo);
-	 *
-	 * @param   string  variable name
-	 * @return  void
-	 */
-	public function __unset($key)
-	{
-		unset($this->_data[$key], View::$_global_data[$key]);
-	}
 
 	/**
 	 * Magic method, returns the output of [View::render].
@@ -259,9 +183,9 @@ class Kohana_View {
 	{
 		if (($path = Kohana::find_file('views', $file)) === FALSE)
 		{
-			//throw new Kohana_View_Exception('The requested view :file could not be found', array(
-			//	':file' => $file,
-			//));
+			throw new Kohana_View_Exception('The requested view :file could not be found', array(
+				':file' => $file,
+			));
 		}
 
 		// Store the file path locally
@@ -292,12 +216,12 @@ class Kohana_View {
 		{
 			foreach ($key as $name => $value)
 			{
-				$this->_data[$name] = $value;
+				$this->{$name} = $value;
 			}
 		}
 		else
 		{
-			$this->_data[$key] = $value;
+			$this->{$key} = $value;
 		}
 
 		return $this;
@@ -318,7 +242,7 @@ class Kohana_View {
 	 */
 	public function bind($key, & $value)
 	{
-		$this->_data[$key] =& $value;
+		$this->{$key} =& $value;
 
 		return $this;
 	}
@@ -350,189 +274,6 @@ class Kohana_View {
 		}
 
 		// Combine local and global data and capture the output
-		return $this->capture($this->_file, $this->_data + View::$_global_data);
+		return $this->capture($this->_file);
 	}
-
-	/**
-	 * Define stream wrapper methods
-	 */
-
-	/**
-	 * Current stream position.
-	 *
-	 * @var int
-	 */
-	protected $_pos = 0;
-
-	/**
-	 * Stream stats.
-	 *
-	 * @var array
-	 */
-	protected $_stat;
-
-	/**
-	 * Raw output character. Prepend this on any echo variables to
-	 * turn off auto encoding of the output
-	 */
-	protected $_raw_output_char = '!';
-
-	/**
-	 * The encoding method to use on view output. Only use the method name
-	 */
-	protected $_encode_method = 'HTML::chars';
-
-	/**
-	 * Opens the script file and converts markup.
-	 */
-	public function stream_open($path, $mode, $options, &$opened_path)
-	{
-		// get the view script source
-		$path        = str_replace('kohana.view://', '', $path);
-		$this->_data = file_get_contents($path);
-
-		/**
-		 * If reading the file failed, update our local stat store
-		 * to reflect the real stat of the file, then return on failure
-		 */
-		if ($this->_data === false)
-		{
-			$this->_stat = stat($path);
-			return false;
-		}
-
-		/**
-		 * Convert <?= ?> to long-form <?php echo ?> and <? ?> to <?php ?>
-		 *
-		 */
-		$regex = '/<\?(\=|php echo)(.+?)\?>/';
-		$this->_data = preg_replace_callback($regex, array($this, '_escape_val'), $this->_data);
-
-		/**
-		 * file_get_contents() won't update PHP's stat cache, so we grab a stat
-		 * of the file to prevent additional reads should the script be
-		 * requested again, which will make include() happy.
-		 */
-		$this->_stat = stat($path);
-
-		return true;
-	}
-
-	/**
-	 * Escapes a variable from template matching
-	 *
-	 * @param   array   matches
-	 * @return  string
-	 */
-	protected function _escape_val($matches)
-	{
-		if (method_exists($this, str_replace('$', 'var_', $matches[2])))
-		{
-			$var = str_replace('$', '$this->var_', $matches[2]).'()';
-		}
-		else
-		{
-			$var = str_replace('$', '$this->var_', $matches[2]);
-		}
-
-		if (substr(trim($matches[2]), 0, 1) != $this->_raw_output_char)
-		{
-			return '<?php echo '.$this->_encode_method.'('.$var.'); ?>';
-		}
-		else // Remove the "turn off escape" character
-			return '<?php echo '.substr(trim($var), strlen($this->_raw_output_char), strlen($var)-1).'(); ?>';
-	}
-
-	/**
-	 * Included so that __FILE__ returns the appropriate info
-	 *
-	 * @return array
-	 */
-	public function url_stat()
-	{
-		return $this->_stat;
-	}
-
-	/**
-	 * Reads from the stream.
-	 */
-	public function stream_read($count)
-	{
-		$ret = substr($this->_data, $this->_pos, $count);
-		$this->_pos += strlen($ret);
-		return $ret;
-	}
-
-	/**
-	 * Tells the current position in the stream.
-	 */
-	public function stream_tell()
-	{
-		return $this->_pos;
-	}
-
-	/**
-	 * Tells if we are at the end of the stream.
-	 */
-	public function stream_eof()
-	{
-		return $this->_pos >= strlen($this->_data);
-	}
-
-	/**
-	 * Stream statistics.
-	 */
-	public function stream_stat()
-	{
-		return $this->_stat;
-	}
-
-	/**
-	 * Seek to a specific point in the stream.
-	 */
-	public function stream_seek($offset, $whence)
-	{
-		switch ($whence)
-		{
-			case SEEK_SET:
-				if ($offset < strlen($this->_data) && $offset >= 0)
-				{
-					$this->_pos = $offset;
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-				break;
-
-			case SEEK_CUR:
-				if ($offset >= 0)
-				{
-					$this->_pos += $offset;
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-				break;
-
-			case SEEK_END:
-				if (strlen($this->_data) + $offset >= 0)
-				{
-					$this->_pos = strlen($this->_data) + $offset;
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-				break;
-
-			default:
-				return false;
-		}
-	}
-
 } // End View
