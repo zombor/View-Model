@@ -10,27 +10,10 @@
  * @copyright  (c) 2008-2010 Kohana Team
  * @license    http://kohanaphp.com/license
  */
-class Kohana_View {
-
-	// Array of global variables
-	protected static $_global_data = array();
+class Kohana_View_Model {
 
 	// View filename
 	protected $_file;
-
-	// Encoded view data
-	protected $_data = array();
-
-	/**
-	 * Raw output character. Prepend this on any echo variables to
-	 * turn off auto encoding of the output
-	 */
-	protected $_raw_output_char = '!';
-
-	/**
-	 * The encoding method to use on view output. Only use the method name
-	 */
-	protected $_encode_method = 'HTML::chars';
 
 	/**
 	 * Returns a new raw View object. If you do not define the "file" parameter,
@@ -57,29 +40,24 @@ class Kohana_View {
 	 * Captures the output that is generated when a view is included.
 	 * The view data will be extracted to make local variables.
 	 *
-	 *     $output = $this->capture($file, $data);
+	 *     $output = $this->capture($file);
 	 *
 	 * @param   string  filename
-	 * @param   array   variables
 	 * @return  string
 	 */
-	protected function capture($kohana_view_filename, array $kohana_view_data)
+	protected function capture($kohana_view_filename)
 	{
-		// Import the view variables to local namespace
-		extract($kohana_view_data, EXTR_SKIP);
+		if ( ! in_array('kohana.view', stream_get_wrappers()))
+		{
+			stream_wrapper_register('kohana.view', 'View_Stream_Wrapper');
+		}
 
 		// Capture the view output
 		ob_start();
 
 		try
 		{
-			$data = file_get_contents($kohana_view_filename);
-
-			$regex = '/<\?(\=|php echo)(.+?)\?>/';
-			$data = preg_replace_callback($regex, array($this, '_escape_val'), $data);
-
-			// Load the view within the current scope
-			eval('?> '.$data);
+			include 'kohana.view://'.$kohana_view_filename;
 		}
 		catch (Exception $e)
 		{
@@ -92,60 +70,6 @@ class Kohana_View {
 
 		// Get the captured output and close the buffer
 		return ob_get_clean();
-	}
-
-	/**
-	 * Escapes a variable from template matching
-	 *
-	 * @param   array   matches
-	 * @return  string
-	 */
-	protected function _escape_val($matches)
-	{
-		if (substr(trim($matches[2]), 0, 1) != $this->_raw_output_char)
-			return '<?php echo '.$this->_encode_method.'('.$matches[2].'); ?>';
-		else // Remove the "turn off escape" character
-			return '<?php echo '.substr(trim($matches[2]), strlen($this->_raw_output_char), strlen($matches[2])-1).'; ?>';
-	}
-
-	/**
-	 * Sets a global variable, similar to [View::set], except that the
-	 * variable will be accessible to all views.
-	 *
-	 *     View::set_global($name, $value);
-	 *
-	 * @param   string  variable name or an array of variables
-	 * @param   mixed   value
-	 * @return  void
-	 */
-	public static function set_global($key, $value = NULL)
-	{
-		if (is_array($key))
-		{
-			foreach ($key as $key2 => $value)
-			{
-				View::$_global_data[$key2] = $value;
-			}
-		}
-		else
-		{
-			View::$_global_data[$key] = $value;
-		}
-	}
-
-	/**
-	 * Assigns a global variable by reference, similar to [View::bind], except
-	 * that the variable will be accessible to all views.
-	 *
-	 *     View::bind_global($key, $value);
-	 *
-	 * @param   string  variable name
-	 * @param   mixed   referenced variable
-	 * @return  void
-	 */
-	public static function bind_global($key, & $value)
-	{
-		View::$_global_data[$key] =& $value;
 	}
 
 	/**
@@ -172,12 +96,11 @@ class Kohana_View {
 		{
 			$this->set_filename($file);
 		}
-		
 
 		if ( $data !== NULL)
 		{
 			// Add the values to the current data
-			$this->_data = $data + $this->_data;
+			$this->set($data);
 		}
 	}
 
@@ -193,15 +116,15 @@ class Kohana_View {
 	 * @return  mixed
 	 * @throws  Kohana_Exception
 	 */
-	public function & __get($key)
+	public function __get($key)
 	{
-		if (isset($this->_data[$key]))
+		if (method_exists($this, $key))
 		{
-			return $this->_data[$key];
+			return $this->$key();
 		}
-		elseif (isset(View::$_global_data[$key]))
+		elseif (property_exists($this, $key))
 		{
-			return View::$_global_data[$key];
+			return $this->$key;
 		}
 		else
 		{
@@ -224,33 +147,6 @@ class Kohana_View {
 		$this->set($key, $value);
 	}
 
-	/**
-	 * Magic method, determines if a variable is set.
-	 *
-	 *     isset($view->foo);
-	 *
-	 * [!!] `NULL` variables are not considered to be set by [isset](http://php.net/isset).
-	 *
-	 * @param   string  variable name
-	 * @return  boolean
-	 */
-	public function __isset($key)
-	{
-		return (isset($this->_data[$key]) OR isset(View::$_global_data[$key]));
-	}
-
-	/**
-	 * Magic method, unsets a given variable.
-	 *
-	 *     unset($view->foo);
-	 *
-	 * @param   string  variable name
-	 * @return  void
-	 */
-	public function __unset($key)
-	{
-		unset($this->_data[$key], View::$_global_data[$key]);
-	}
 
 	/**
 	 * Magic method, returns the output of [View::render].
@@ -319,12 +215,12 @@ class Kohana_View {
 		{
 			foreach ($key as $name => $value)
 			{
-				$this->_data[$name] = $value;
+				$this->{$name} = $value;
 			}
 		}
 		else
 		{
-			$this->_data[$key] = $value;
+			$this->{$key} = $value;
 		}
 
 		return $this;
@@ -345,7 +241,7 @@ class Kohana_View {
 	 */
 	public function bind($key, & $value)
 	{
-		$this->_data[$key] =& $value;
+		$this->{$key} =& $value;
 
 		return $this;
 	}
@@ -376,26 +272,7 @@ class Kohana_View {
 			throw new Kohana_View_Exception('You must set the file to use within your view before rendering');
 		}
 
-		// Get the var_ properties
-		foreach (get_object_vars($this) as $property => $value)
-		{
-			if (substr_count($property, 'var_'))
-			{
-				$this->set(str_replace('var_', '', $property), $this->{$property});
-			}
-		}
-
-		// Get the var_ methods
-		foreach (get_class_methods($this) as $method)
-		{
-			if (substr_count($method, 'var_'))
-			{
-				$this->set(str_replace('var_', '', $method), $this->{$method}());
-			}
-		}
-
 		// Combine local and global data and capture the output
-		return $this->capture($this->_file, $this->_data + View::$_global_data);
+		return $this->capture($this->_file);
 	}
-
 } // End View
