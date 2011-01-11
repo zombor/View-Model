@@ -40,17 +40,16 @@ class Kohana_View {
 	 * Captures the output that is generated when a view is included.
 	 * The view data will be extracted to make local variables.
 	 *
-	 *     $output = $this->capture($file, $data);
+	 *     $output = $this->capture($file);
 	 *
 	 * @param   string  filename
-	 * @param   array   variables
 	 * @return  string
 	 */
 	protected function capture($kohana_view_filename)
 	{
 		if ( ! in_array('kohana.view', stream_get_wrappers()))
 		{
-			stream_wrapper_register('kohana.view', 'Kohana_Stream_Wrapper');
+			stream_wrapper_register('kohana.view', 'View_Stream_Wrapper');
 		}
 
 		// Capture the view output
@@ -101,7 +100,7 @@ class Kohana_View {
 		if ( $data !== NULL)
 		{
 			// Add the values to the current data
-			$this->_data = $data + $this->_data;
+			$this->set($data);
 		}
 	}
 

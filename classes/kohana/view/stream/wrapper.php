@@ -64,7 +64,7 @@ class Kohana_Stream_Wrapper
 	 * Raw output character. Prepend this on any echo variables to
 	 * turn off auto encoding of the output
 	 */
-	protected $_raw_output_char = '!';
+	protected $_raw_output_char = '^';
 
 	/**
 	 * The encoding method to use on view output. Only use the method name
@@ -115,12 +115,13 @@ class Kohana_Stream_Wrapper
 	 */
 	protected function _escape_val($matches)
 	{
+		// Use __get() directly on the class
 		$var = str_replace('$', '$this->var_', $matches[2]);
 
 		if (substr(trim($matches[2]), 0, 1) != $this->_raw_output_char)
 			return '<?php echo '.$this->_encode_method.'('.$var.'); ?>';
 		else // Remove the "turn off escape" character
-			return '<?php echo '.substr(trim($var), strlen($this->_raw_output_char), strlen($var)-1).'(); ?>';
+			return '<?php echo '.substr(trim($var), strlen($this->_raw_output_char), strlen($var)-1).'; ?>';
 	}
 
 	/**
