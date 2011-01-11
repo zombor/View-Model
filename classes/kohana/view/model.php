@@ -10,7 +10,7 @@
  * @copyright  (c) 2008-2010 Kohana Team
  * @license    http://kohanaphp.com/license
  */
-class Kohana_View {
+class Kohana_View_Model {
 
 	// View filename
 	protected $_file;
