@@ -33,7 +33,7 @@ Create the associated view file (template) in your views directory with the same
 Usage
 ============
 
-Create your view template file the same as you would have before, but remember that any logic belongs in the view class.  If you want to prevent the automatic variable escaping, prepend the variable with an '!'.
+Create your view template file the same as you would have before, but remember that any logic belongs in the view class.  If you want to prevent the automatic variable escaping, prepend the variable with an '^'.
 
 	// application/views/foo/bar.php
 	<p>This view is <?=$adjective?>!</p>
